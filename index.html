@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Brand Search</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+        }
+        
+        .logo {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #4285f4;
+            margin-bottom: 10px;
+            letter-spacing: -0.5px;
+        }
+        
+        .tagline {
+            color: #5f6368;
+            font-size: 1rem;
+            margin-bottom: 30px;
+        }
+        
+        .search-container {
+            position: relative;
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 15px 50px 15px 20px;
+            font-size: 1rem;
+            border: 1px solid #dfe1e5;
+            border-radius: 24px;
+            outline: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: box-shadow 0.3s;
+        }
+        
+        .search-input:focus {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #5f6368;
+        }
+        
+        .categories {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .category-chip {
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 16px;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .category-chip:hover {
+            background-color: #f1f3f4;
+            transform: translateY(-2px);
+        }
+        
+        .results-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        .brand-card {
+            background-color: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .brand-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .brand-image {
+            height: 160px;
+            width: 100%;
+            object-fit: cover;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .brand-info {
+            padding: 15px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .brand-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #202124;
+        }
+        
+        .brand-category {
+            font-size: 0.85rem;
+            color: #5f6368;
+            margin-bottom: 10px;
+        }
+        
+        .brand-link {
+            display: inline-flex;
+            align-items: center;
+            color: #4285f4;
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-top: auto;
+        }
+        
+        .brand-link:hover {
+            text-decoration: underline;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #5f6368;
+        }
+        
+        .no-results i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #dfe1e5;
+        }
+        
+        .popular-categories {
+            margin-top: 40px;
+        }
+        
+        .popular-categories h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #202124;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 2rem;
+            }
+            
+            .results-container {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        
+        // Brand data for different categories
+        const brandsData = {
+            bags: [
+                { name: "Nike", category: "Bags", image: "https://picsum.photos/seed/nikebags/300/200.jpg", url: "https://www.nike.com/bags" },
+                { name: "Adidas", category: "Bags", image: "https://picsum.photos/seed/adidasbags/300/200.jpg", url: "https://www.adidas.com/bags" },
+                { name: "Gucci", category: "Bags", image: "https://picsum.photos/seed/guccibags/300/200.jpg", url: "https://www.gucci.com/us/en/bags" },
+                { name: "Puma", category: "Bags", image: "https://picsum.photos/seed/pumabags/300/200.jpg", url: "https://www.puma.com/bags" },
+                { name: "Samsonite", category: "Bags", image: "https://picsum.photos/seed/samsonite/300/200.jpg", url: "https://www.samsonite.com" },
+                { name: "The North Face", category: "Bags", image: "https://picsum.photos/seed/northface/300/200.jpg", url: "https://www.thenorthface.com/bags" }
+            ],
+            watches: [
+                { name: "Rolex", category: "Watches", image: "https://picsum.photos/seed/rolex/300/200.jpg", url: "https://www.rolex.com" },
+                { name: "Omega", category: "Watches", image: "https://picsum.photos/seed/omega/300/200.jpg", url: "https://www.omegawatches.com" },
+                { name: "Seiko", category: "Watches", image: "https://picsum.photos/seed/seiko/300/200.jpg", url: "https://www.seikowatches.com" },
+                { name: "Citizen", category: "Watches", image: "https://picsum.photos/seed/citizen/300/200.jpg", url: "https://www.citizenwatch.com" },
+                { name: "Fossil", category: "Watches", image: "https://picsum.photos/seed/fossil/300/200.jpg", url: "https://www.fossil.com" },
+                { name: "Casio", category: "Watches", image: "https://picsum.photos/seed/casio/300/200.jpg", url: "https://www.casio.com/watches" }
+            ],
+            jewelry: [
+                { name: "Tiffany & Co.", category: "Jewelry", image: "https://picsum.photos/seed/tiffany/300/200.jpg", url: "https://www.tiffany.com" },
+                { name: "Cartier", category: "Jewelry", image: "https://picsum.photos/seed/cartier/300/200.jpg", url: "https://www.cartier.com" },
+                { name: "Pandora", category: "Jewelry", image: "https://picsum.photos/seed/pandora/300/200.jpg", url: "https://www.pandora.net" },
+                { name: "Swarovski", category: "Jewelry", image: "https://picsum.photos/seed/swarovski/300/200.jpg", url: "https://www.swarovski.com" },
+                { name: "Kay Jewelers", category: "Jewelry", image: "https://picsum.photos/seed/kayjewelers/300/200.jpg", url: "https://www.kay.com" },
+                { name: "Blue Nile", category: "Jewelry", image: "https://picsum.photos/seed/bluenile/300/200.jpg", url: "https://www.bluenile.com" }
+            ],
+            gaming: [
+                { name: "Razer", category: "Gaming", image: "https://picsum.photos/seed/razer/300/200.jpg", url: "https://www.razer.com" },
+                { name: "Logitech", category: "Gaming", image: "https://picsum.photos/seed/logitech/300/200.jpg", url: "https://www.logitechg.com" },
+                { name: "MSI", category: "Gaming", image: "https://picsum.photos/seed/msi/300/200.jpg", url: "https://www.msi.com/Gaming" },
+                { name: "ASUS", category: "Gaming", image: "https://picsum.photos/seed/asus/300/200.jpg", url: "https://www.asus.com/gaming" },
+                { name: "Alienware", category: "Gaming", image: "https://picsum.photos/seed/alienware/300/200.jpg", url: "https://www.dell.com/en-us/gaming/alienware" },
+                { name: "Corsair", category: "Gaming", image: "https://picsum.photos/seed/corsair/300/200.jpg", url: "https://www.corsair.com" }
+            ],
+            headphones: [
+                { name: "Sony", category: "Headphones", image: "https://picsum.photos/seed/sonyheadphones/300/200.jpg", url: "https://www.sony.com/electronics/headphones" },
+                { name: "Bose", category: "Headphones", image: "https://picsum.photos/seed/boseheadphones/300/200.jpg", url: "https://www.bose.com/en_us/headphones.html" },
+                { name: "Sennheiser", category: "Headphones", image: "https://picsum.photos/seed/sennheiser/300/200.jpg", url: "https://en-us.sennheiser.com/headphones" },
+                { name: "Audio-Technica", category: "Headphones", image: "https://picsum.photos/seed/audiotechnica/300/200.jpg", url: "https://www.audio-technica.com/world-map/headphones" },
+                { name: "JBL", category: "Headphones", image: "https://picsum.photos/seed/jblheadphones/300/200.jpg", url: "https://www.jbl.com/headphones" },
+                { name: "Beats", category: "Headphones", image: "https://picsum.photos/seed/beatsheadphones/300/200.jpg", url: "https://www.beatsbydre.com/headphones" },
+                { name: "Skullcandy", category: "Headphones", image: "https://picsum.photos/seed/skullcandy/300/200.jpg", url: "https://www.skullcandy.com/headphones" },
+                { name: "Plantronics", category: "Headphones", image: "https://picsum.photos/seed/plantronics/300/200.jpg", url: "https://www.poly.com/us/en/support/plantronics-headsets" }
+            ],
+            glasses: [
+                { name: "Ray-Ban", category: "Glasses", image: "https://picsum.photos/seed/rayban/300/200.jpg", url: "https://www.ray-ban.com" },
+                { name: "Oakley", category: "Glasses", image: "https://picsum.photos/seed/oakley/300/200.jpg", url: "https://www.oakley.com" },
+                { name: "Warby Parker", category: "Glasses", image: "https://picsum.photos/seed/warbyparker/300/200.jpg", url: "https://www.warbyparker.com" },
+                { name: "LensCrafters", category: "Glasses", image: "https://picsum.photos/seed/lenscrafters/300/200.jpg", url: "https://www.lenscrafters.com" },
+                { name: "Gucci Eyewear", category: "Glasses", image: "https://picsum.photos/seed/gucciglasses/300/200.jpg", url: "https://www.gucci.com/us/en/eyewear" },
+                { name: "Prada Eyewear", category: "Glasses", image: "https://picsum.photos/seed/pradaglasses/300/200.jpg", url: "https://www.prada.com/us/en/eyewear.html" }
+            ],
+            furniture: [
+                { name: "IKEA", category: "Furniture", image: "https://picsum.photos/seed/ikea/300/200.jpg", url: "https://www.ikea.com" },
+                { name: "Ashley Furniture", category: "Furniture", image: "https://picsum.photos/seed/ashley/300/200.jpg", url: "https://www.ashleyfurniture.com" },
+                { name: "West Elm", category: "Furniture", image: "https://picsum.photos/seed/westelm/300/200.jpg", url: "https://www.westelm.com" },
+                { name: "Pottery Barn", category: "Furniture", image: "https://picsum.photos/seed/potterybarn/300/200.jpg", url: "https://www.potterybarn.com" },
+                { name: "Wayfair", category: "Furniture", image: "https://picsum.photos/seed/wayfair/300/200.jpg", url: "https://www.wayfair.com" },
+                { name: "Restoration Hardware", category: "Furniture", image: "https://picsum.photos/seed/rh/300/200.jpg", url: "https://www.restorationhardware.com" }
+            ],
+            keyboard: [
+                { name: "Logitech", category: "Keyboard", image: "https://picsum.photos/seed/logitechkb/300/200.jpg", url: "https://www.logitech.com/en-us/keyboards" },
+                { name: "Razer", category: "Keyboard", image: "https://picsum.photos/seed/razerkb/300/200.jpg", url: "https://www.razer.com/keyboards" },
+                { name: "Corsair", category: "Keyboard", image: "https://picsum.photos/seed/corsairkb/300/200.jpg", url: "https://www.corsair.com/us/en/Categories/Products/Gaming-Keyboards" },
+                { name: "Keychron", category: "Keyboard", image: "https://picsum.photos/seed/keychron/300/200.jpg", url: "https://www.keychron.com" },
+                { name: "HyperX", category: "Keyboard", image: "https://picsum.photos/seed/hyperxkb/300/200.jpg", url: "https://www.hyperx.com/keyboards" },
+                { name: "SteelSeries", category: "Keyboard", image: "https://picsum.photos/seed/steelserieskb/300/200.jpg", url: "https://steelseries.com/gaming-keyboards" }
+            ],
+            mouse: [
+                { name: "Logitech", category: "Mouse", image: "https://picsum.photos/seed/logitechmouse/300/200.jpg", url: "https://www.logitech.com/en-us/mice" },
+                { name: "Razer", category: "Mouse", image: "https://picsum.photos/seed/razermouse/300/200.jpg", url: "https://www.razer.com/mice" },
+                { name: "Corsair", category: "Mouse", image: "https://picsum.photos/seed/corsairmouse/300/200.jpg", url: "https://www.corsair.com/us/en/Categories/Products/Gaming-Mice" },
+                { name: "HyperX", category: "Mouse", image: "https://picsum.photos/seed/hyperxmouse/300/200.jpg", url: "https://www.hyperx.com/mice" },
+                { name: "SteelSeries", category: "Mouse", image: "https://picsum.photos/seed/steelseriesmouse/300/200.jpg", url: "https://steelseries.com/gaming-mice" },
+                { name: "Microsoft", category: "Mouse", image: "https://picsum.photos/seed/microsoftmouse/300/200.jpg", url: "https://www.microsoft.com/accessories/mice" }
+            ],
+            "graphic card": [
+                { name: "NVIDIA", category: "Graphic Card", image: "https://picsum.photos/seed/nvidia/300/200.jpg", url: "https://www.nvidia.com" },
+                { name: "AMD", category: "Graphic Card", image: "https://picsum.photos/seed/amd/300/200.jpg", url: "https://www.amd.com/en/products/graphics" },
+                { name: "ASUS ROG", category: "Graphic Card", image: "https://picsum.photos/seed/asusrog/300/200.jpg", url: "https://www.asus.com/graphics-cards" },
+                { name: "MSI Gaming", category: "Graphic Card", image: "https://picsum.photos/seed/msigaming/300/200.jpg", url: "https://www.msi.com/Graphics-card" },
+                { name: "EVGA", category: "Graphic Card", image: "https://picsum.photos/seed/evga/300/200.jpg", url: "https://www.evga.com/products" },
+                { name: "Gigabyte", category: "Graphic Card", image: "https://picsum.photos/seed/gigabyte/300/200.jpg", url: "https://www.gigabyte.com/Graphics-Card" }
+            ],
+            shoes: [
+                { name: "Nike", category: "Shoes", image: "https://picsum.photos/seed/nikeshoes/300/200.jpg", url: "https://www.nike.com/shoes" },
+                { name: "Adidas", category: "Shoes", image: "https://picsum.photos/seed/adidasshoes/300/200.jpg", url: "https://www.adidas.com/shoes" },
+                { name: "Puma", category: "Shoes", image: "https://picsum.photos/seed/pumashoes/300/200.jpg", url: "https://www.puma.com/shoes" },
+                { name: "Reebok", category: "Shoes", image: "https://picsum.photos/seed/reebok/300/200.jpg", url: "https://www.reebok.com/shoes" },
+                { name: "New Balance", category: "Shoes", image: "https://picsum.photos/seed/newbalance/300/200.jpg", url: "https://www.newbalance.com/shoes" },
+                { name: "Converse", category: "Shoes", image: "https://picsum.photos/seed/converse/300/200.jpg", url: "https://www.converse.com/shoes" }
+            ],
+            "computer accessories": [
+                { name: "Belkin", category: "Computer Accessories", image: "https://picsum.photos/seed/belkin/300/200.jpg", url: "https://www.belkin.com" },
+                { name: "Anker", category: "Computer Accessories", image: "https://picsum.photos/seed/anker/300/200.jpg", url: "https://www.anker.com" },
+                { name: "Logitech", category: "Computer Accessories", image: "https://picsum.photos/seed/logitechacc/300/200.jpg", url: "https://www.logitech.com" },
+                { name: "HP", category: "Computer Accessories", image: "https://picsum.photos/seed/hpacc/300/200.jpg", url: "https://www.hp.com/us-en/shop/computer-accessories" },
+                { name: "Dell", category: "Computer Accessories", image: "https://picsum.photos/seed/dellacc/300/200.jpg", url: "https://www.dell.com/en-us/shop/computer-accessories" },
+                { name: "Microsoft", category: "Computer Accessories", image: "https://picsum.photos/seed/msacc/300/200.jpg", url: "https://www.microsoft.com/accessories" }
+            ],
+            "note pads": [
+                { name: "Moleskine", category: "Note Pads", image: "https://picsum.photos/seed/moleskine/300/200.jpg", url: "https://www.moleskine.com" },
+                { name: "Leuchtturm1917", category: "Note Pads", image: "https://picsum.photos/seed/leuchtturm/300/200.jpg", url: "https://www.leuchtturm1917.com" },
+                { name: "Rhodia", category: "Note Pads", image: "https://picsum.photos/seed/rhodia/300/200.jpg", url: "https://www.rhodiapads.com" },
+                { name: "Field Notes", category: "Note Pads", image: "https://picsum.photos/seed/fieldnotes/300/200.jpg", url: "https://fieldnotesbrand.com" },
+                { name: "Miquelrius", category: "Note Pads", image: "https://picsum.photos/seed/miquelrius/300/200.jpg", url: "https://www.miquelrius.com" },
+                { name: "Clairefontaine", category: "Note Pads", image: "https://picsum.photos/seed/clairefontaine/300/200.jpg", url: "https://www.clairefontaine.com" }
+            ],
+            books: [
+                { name: "Amazon Books", category: "Books", image: "https://picsum.photos/seed/amazonbooks/300/200.jpg", url: "https://www.amazon.com/books" },
+                { name: "Goodreads", category: "Books", image: "https://picsum.photos/seed/goodreads/300/200.jpg", url: "https://www.goodreads.com" },
+                { name: "Barnes & Noble", category: "Books", image: "https://picsum.photos/seed/barnes/300/200.jpg", url: "https://www.barnesandnoble.com" },
+                { name: "Book Depository", category: "Books", image: "https://picsum.photos/seed/bookdepository/300/200.jpg", url: "https://www.bookdepository.com" },
+                { name: "Audible", category: "Books", image: "https://picsum.photos/seed/audible/300/200.jpg", url: "https://www.audible.com" },
+                { name: "Scribd", category: "Books", image: "https://picsum.photos/seed/scribd/300/200.jpg", url: "https://www.scribd.com" }
+            ],
+            "children toys": [
+                { name: "LEGO", category: "Children Toys", image: "https://picsum.photos/seed/lego/300/200.jpg", url: "https://www.lego.com" },
+                { name: "Hasbro", category: "Children Toys", image: "https://picsum.photos/seed/hasbro/300/200.jpg", url: "https://www.hasbro.com" },
+                { name: "Mattel", category: "Children Toys", image: "https://picsum.photos/seed/mattel/300/200.jpg", url: "https://www.mattel.com" },
+                { name: "Fisher-Price", category: "Children Toys", image: "https://picsum.photos/seed/fisherprice/300/200.jpg", url: "https://www.fisher-price.com" },
+                { name: "Barbie", category: "Children Toys", image: "https://picsum.photos/seed/barbie/300/200.jpg", url: "https://www.barbie.com" },
+                { name: "Hot Wheels", category: "Children Toys", image: "https://picsum.photos/seed/hotwheels/300/200.jpg", url: "https://www.hotwheels.com" },
+                { name: "Nerf", category: "Children Toys", image: "https://picsum.photos/seed/nerf/300/200.jpg", url: "https://www.nerf.com" },
+                { name: "Play-Doh", category: "Children Toys", image: "https://picsum.photos/seed/playdoh/300/200.jpg", url: "https://www.playdoh.com" },
+                { name: "Melissa & Doug", category: "Children Toys", image: "https://picsum.photos/seed/melissadoug/300/200.jpg", url: "https://www.melissaanddoug.com" },
+                { name: "VTech", category: "Children Toys", image: "https://picsum.photos/seed/vtech/300/200.jpg", url: "https://www.vtech.com" },
+                { name: "Crayola", category: "Children Toys", image: "https://picsum.photos/seed/crayola/300/200.jpg", url: "https://www.crayola.com" },
+                { name: "Spin Master", category: "Children Toys", image: "https://picsum.photos/seed/spinmaster/300/200.jpg", url: "https://www.spinmaster.com" },
+                { name: "MGA Entertainment", category: "Children Toys", image: "https://picsum.photos/seed/mgaentertainment/300/200.jpg", url: "https://www.mgae.com" },
+                { name: "Ravensburger", category: "Children Toys", image: "https://picsum.photos/seed/ravensburger/300/200.jpg", url: "https://www.ravensburger.com" },
+                { name: "Schleich", category: "Children Toys", image: "https://picsum.photos/seed/schleich/300/200.jpg", url: "https://www.schleich.com" },
+                { name: "BRIO", category: "Children Toys", image: "https://picsum.photos/seed/brio/300/200.jpg", url: "https://www.brio.net" },
+                { name: "Bandai", category: "Children Toys", image: "https://picsum.photos/seed/bandai/300/200.jpg", url: "https://www.bandai.com" },
+                { name: "Takara Tomy", category: "Children Toys", image: "https://picsum.photos/seed/takaratomy/300/200.jpg", url: "https://www.takaratomy.co.jp" },
+                { name: "Jakks Pacific", category: "Children Toys", image: "https://picsum.photos/seed/jakks/300/200.jpg", url: "https://www.jakks.com" },
+                { name: "Jazwares", category: "Children Toys", image: "https://picsum.photos/seed/jazwares/300/200.jpg", url: "https://www.jazwares.com" }
+            ],
+            "kitchen accessories": [
+                { name: "KitchenAid", category: "Kitchen Accessories", image: "https://picsum.photos/seed/kitchenaid/300/200.jpg", url: "https://www.kitchenaid.com" },
+                { name: "Cuisinart", category: "Kitchen Accessories", image: "https://picsum.photos/seed/cuisinart/300/200.jpg", url: "https://www.cuisinart.com" },
+                { name: "OXO", category: "Kitchen Accessories", image: "https://picsum.photos/seed/oxo/300/200.jpg", url: "https://www.oxo.com" },
+                { name: "Calphalon", category: "Kitchen Accessories", image: "https://picsum.photos/seed/calphalon/300/200.jpg", url: "https://www.calphalon.com" },
+                { name: "Le Creuset", category: "Kitchen Accessories", image: "https://picsum.photos/seed/lecreuset/300/200.jpg", url: "https://www.lecreuset.com" },
+                { name: "Ninja", category: "Kitchen Accessories", image: "https://picsum.photos/seed/ninja/300/200.jpg", url: "https://www.ninjakitchen.com" }
+            ],
+            "car accessories": [
+                { name: "3M", category: "Car Accessories", image: "https://picsum.photos/seed/3mcar/300/200.jpg", url: "https://www.3m.com/automotive" },
+                { name: "WeatherTech", category: "Car Accessories", image: "https://picsum.photos/seed/weathertech/300/200.jpg", url: "https://www.weathertech.com" },
+                { name: "Covercraft", category: "Car Accessories", image: "https://picsum.photos/seed/covercraft/300/200.jpg", url: "https://www.covercraft.com" },
+                { name: "Thule", category: "Car Accessories", image: "https://picsum.photos/seed/thule/300/200.jpg", url: "https://www.thule.com/car" },
+                { name: "Yakima", category: "Car Accessories", image: "https://picsum.photos/seed/yakima/300/200.jpg", url: "https://www.yakima.com" },
+                { name: "AutoZone", category: "Car Accessories", image: "https://picsum.photos/seed/autozone/300/200.jpg", url: "https://www.autozone.com" }
+            ],
+            "bike accessories": [
+                { name: "Shimano", category: "Bike Accessories", image: "https://picsum.photos/seed/shimano/300/200.jpg", url: "https://bike.shimano.com" },
+                { name: "Thule", category: "Bike Accessories", image: "https://picsum.photos/seed/thulebike/300/200.jpg", url: "https://www.thule.com/bike" },
+                { name: "Bell", category: "Bike Accessories", image: "https://picsum.photos/seed/bell/300/200.jpg", url: "https://www.bellhelmets.com" },
+                { name: "Giro", category: "Bike Accessories", image: "https://picsum.photos/seed/giro/300/200.jpg", url: "https://www.giro.com" },
+                { name: "Specialized", category: "Bike Accessories", image: "https://picsum.photos/seed/specialized/300/200.jpg", url: "https://www.specialized.com" },
+                { name: "Garmin", category: "Bike Accessories", image: "https://picsum.photos/seed/garminbike/300/200.jpg", url: "https://www.garmin.com/en-US/c/bike" }
+            ],
+            "online shopping": [
+                { name: "Amazon", category: "Online Shopping", image: "https://picsum.photos/seed/amazon/300/200.jpg", url: "https://www.amazon.com" },
+                { name: "eBay", category: "Online Shopping", image: "https://picsum.photos/seed/ebay/300/200.jpg", url: "https://www.ebay.com" },
+                { name: "Walmart", category: "Online Shopping", image: "https://picsum.photos/seed/walmart/300/200.jpg", url: "https://www.walmart.com" },
+                { name: "Target", category: "Online Shopping", image: "https://picsum.photos/seed/target/300/200.jpg", url: "https://www.target.com" },
+                { name: "Best Buy", category: "Online Shopping", image: "https://picsum.photos/seed/bestbuy/300/200.jpg", url: "https://www.bestbuy.com" },
+                { name: "Etsy", category: "Online Shopping", image: "https://picsum.photos/seed/etsy/300/200.jpg", url: "https://www.etsy.com" }
+            ],
+            dresses: [
+                { name: "Zara", category: "Dresses", image: "https://picsum.photos/seed/zara/300/200.jpg", url: "https://www.zara.com/dresses" },
+                { name: "H&M", category: "Dresses", image: "https://picsum.photos/seed/hm/300/200.jpg", url: "https://www2.hm.com/en_us/women/products/dresses.html" },
+                { name: "Mango", category: "Dresses", image: "https://picsum.photos/seed/mango/300/200.jpg", url: "https://shop.mango.com/us/women/dresses" },
+                { name: "ASOS", category: "Dresses", image: "https://picsum.photos/seed/asos/300/200.jpg", url: "https://www.asos.com/women/dresses/" },
+                { name: "Forever 21", category: "Dresses", image: "https://picsum.photos/seed/forever21/300/200.jpg", url: "https://www.forever21.com/us/shop/catalog/category/dresses" },
+                { name: "Nordstrom", category: "Dresses", image: "https://picsum.photos/seed/nordstrom/300/200.jpg", url: "https://shop.nordstrom.com/c/dresses" }
+            ],
+            suits: [
+                { name: "Hugo Boss", category: "Suits", image: "https://picsum.photos/seed/hugoboss/300/200.jpg", url: "https://www.hugoboss.com/us/mens-suits" },
+                { name: "Brooks Brothers", category: "Suits", image: "https://picsum.photos/seed/brooksbrothers/300/200.jpg", url: "https://www.brooksbrothers.com/suits" },
+                { name: "Men's Wearhouse", category: "Suits", image: "https://picsum.photos/seed/menswearhouse/300/200.jpg", url: "https://www.menswearhouse.com/suits" },
+                { name: "Jos. A. Bank", category: "Suits", image: "https://picsum.photos/seed/josabank/300/200.jpg", url: "https://www.josbank.com/suits" },
+                { name: "Armani", category: "Suits", image: "https://picsum.photos/seed/armani/300/200.jpg", url: "https://www.armani.com/us/menswear/suits" },
+                { name: "Tom Ford", category: "Suits", image: "https://picsum.photos/seed/tomford/300/200.jpg", url: "https://www.tomford.com/menswear/suits" }
+            ],
+            pillows: [
+                { name: "Tempur-Pedic", category: "Pillows", image: "https://picsum.photos/seed/tempurpedic/300/200.jpg", url: "https://www.tempurpedic.com/pillows" },
+                { name: "My Pillow", category: "Pillows", image: "https://picsum.photos/seed/mypillow/300/200.jpg", url: "https://www.mypillow.com" },
+                { name: "Coop Home Goods", category: "Pillows", image: "https://picsum.photos/seed/coophome/300/200.jpg", url: "https://www.coophomegoods.com" },
+                { name: "Sleep Number", category: "Pillows", image: "https://picsum.photos/seed/sleepnumber/300/200.jpg", url: "https://www.sleepnumber.com/pillows" },
+                { name: "Casper", category: "Pillows", image: "https://picsum.photos/seed/casper/300/200.jpg", url: "https://casper.com/pillows" },
+                { name: "Purple", category: "Pillows", image: "https://picsum.photos/seed/purple/300/200.jpg", url: "https://purple.com/pillows" }
+            ]
+        };
+        
+        // Flatten the brands data for easier searching
+        const allBrands = Object.values(brandsData).flat();
+        
+        // Popular categories for empty search
+        const popularCategories = Object.keys(brandsData).slice(0, 8);
+        
+        function App() {
+            const [searchTerm, setSearchTerm] = useState('');
+            const [searchResults, setSearchResults] = useState([]);
+            const [showPopularCategories, setShowPopularCategories] = useState(true);
+            
+            useEffect(() => {
+                if (searchTerm.trim() === '') {
+                    setSearchResults([]);
+                    setShowPopularCategories(true);
+                } else {
+                    setShowPopularCategories(false);
+                    // Filter brands based on search term
+                    const filteredResults = allBrands.filter(brand => 
+                        brand.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        brand.category.toLowerCase().includes(searchTerm.toLowerCase())
+                    );
+                    setSearchResults(filteredResults);
+                }
+            }, [searchTerm]);
+            
+            const handleCategoryClick = (category) => {
+                setSearchTerm(category);
+            };
+            
+            return (
+                <div className="container">
+                    <header>
+                        <h1 className="logo">Smart Brand Search</h1>
+                        <p className="tagline">Discover the best brands for any product</p>
+                    </header>
+                    
+                    <div className="search-container">
+                        <input
+                            type="text"
+                            className="search-input"
+                            placeholder="Search for products or brands..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                        <i className="fas fa-search search-icon"></i>
+                    </div>
+                    
+                    {showPopularCategories && (
+                        <div className="popular-categories">
+                            <h2>Popular Categories</h2>
+                            <div className="categories">
+                                {popularCategories.map(category => (
+                                    <div
+                                        key={category}
+                                        className="category-chip"
+                                        onClick={() => handleCategoryClick(category)}
+                                    >
+                                        {category.charAt(0).toUpperCase() + category.slice(1)}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {!showPopularCategories && searchResults.length > 0 && (
+                        <div className="results-container">
+                            {searchResults.map((brand, index) => (
+                                <div key={index} className="brand-card">
+                                    <img src={brand.image} alt={brand.name} className="brand-image" />
+                                    <div className="brand-info">
+                                        <h3 className="brand-name">{brand.name}</h3>
+                                        <p className="brand-category">{brand.category}</p>
+                                        <a href={brand.url} target="_blank" rel="noopener noreferrer" className="brand-link">
+                                            Visit Website <i className="fas fa-external-link-alt"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    
+                    {!showPopularCategories && searchResults.length === 0 && (
+                        <div className="no-results">
+                            <i className="fas fa-search"></i>
+                            <h2>No results found</h2>
+                            <p>Try searching for a different product or brand</p>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+        
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
